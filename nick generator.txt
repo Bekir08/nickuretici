@@ -1,0 +1,458 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import random
+import threading
+import sv_ttk
+from tkinter.font import Font
+
+class PremiumTikTokNameGenerator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Premium TikTok İsim Oluşturucu")
+        self.root.geometry("1000x800")
+        self.root.configure(bg='#0A0A14')
+        self.root.resizable(True, True)
+        self.root.minsize(380, 600)  # Telefonlar için minimum boyut
+        
+        # Ekran boyutunu algıla ve uyumlu boyutlandırma
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
+        
+        # Mobil cihaz benzeri ekran boyutu için
+        if self.screen_width <= 480:
+            self.root.geometry("380x600")
+        
+        # Koyu tema uygula
+        sv_ttk.set_theme("dark")
+        
+        # Font boyutlarını ekran genişliğine göre ayarla
+        self.title_font_size = 20 if self.screen_width <= 768 else 24
+        self.normal_font_size = 10 if self.screen_width <= 768 else 12
+        self.small_font_size = 9 if self.screen_width <= 768 else 11
+        
+        # Renkler
+        self.bg_color = '#0A0A14'
+        self.card_bg = '#1A1A2E'
+        self.accent_color = '#FF0050'  # TikTok pembesi
+        self.secondary_color = '#00F2EA'  # TikTok mavisi
+        self.premium_gold = '#FFD700'  # Premium altın rengi
+        self.text_color = '#FFFFFF'
+        self.subtext_color = '#A0A0B0'
+        
+        # BY Bojo yazısı için font
+        self.by_font = Font(family="Helvetica", size=10, weight="bold")
+        
+        # Nadir isim bileşenleri
+        self.short_prefixes = ["Kral", "Yıldız", "Gece", "Gün", "Ay", "Su", "Ateş", "Toprak", "Hava", "Buz", "Elmas", "Altın", "Gümüş", "Yıldırım", "Şimşek"]
+        self.short_suffixes = ["TR", "06", "34", "07", "35", "01", "X", "Z", "Q", "J", "W", "V", "K", "M", "P"]
+        self.special_chars = ["_", ".", "-", ""]
+        
+        self.setup_ui()
+        
+        # Pencere boyutu değişikliklerini dinle
+        self.root.bind('<Configure>', self.on_window_resize)
+        
+    def on_window_resize(self, event):
+        # Pencere boyutu değiştiğinde responsive tasarımı güncelle
+        if event.widget == self.root:
+            width = event.width
+            # Font boyutlarını dinamik olarak ayarla
+            if width <= 480:  # Mobil boyut
+                self.title_font_size = 16
+                self.normal_font_size = 10
+                self.small_font_size = 9
+            elif width <= 768:  # Tablet boyut
+                self.title_font_size = 20
+                self.normal_font_size = 12
+                self.small_font_size = 11
+            else:  # Masaüstü boyut
+                self.title_font_size = 24
+                self.normal_font_size = 14
+                self.small_font_size = 12
+                
+            # Fontları güncelle
+            self.update_fonts()
+    
+    def update_fonts(self):
+        # Tüm fontları güncelle
+        self.title_label.config(font=('Helvetica', self.title_font_size, 'bold'))
+        self.desc_label.config(font=('Helvetica', self.small_font_size))
+        
+        # Diğer widget'ların fontlarını da güncellemek gerekebilir
+        # Bu kısım daha kapsamlı yapılabilir
+        
+    def setup_ui(self):
+        # BY Bojo yazısı - Sol üst köşede
+        by_label = tk.Label(self.root, text="BY Bojo", font=self.by_font, 
+                           fg=self.premium_gold, bg=self.bg_color)
+        by_label.place(x=10, y=10)
+        
+        # Ana container
+        main_container = tk.Frame(self.root, bg=self.bg_color)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=(40, 15))
+        
+        # Başlık bölümü
+        header_frame = tk.Frame(main_container, bg=self.bg_color)
+        header_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        self.title_label = tk.Label(header_frame, text="PREMIUM TIKTOK İSİM ÜRETİCİ", 
+                        font=('Helvetica', self.title_font_size, 'bold'), 
+                        fg=self.text_color, bg=self.bg_color)
+        self.title_label.pack(pady=(0, 10))
+        
+        desc_text = "4-10 karakter aralığında nadir, benzersiz ve akılda kalıcı TikTok kullanıcı adları oluşturun"
+        self.desc_label = tk.Label(header_frame, text=desc_text, font=('Helvetica', self.small_font_size), 
+                       fg=self.subtext_color, bg=self.bg_color, wraplength=700)
+        self.desc_label.pack()
+        
+        # Kontrol paneli - Kart tasarımı
+        control_card = tk.Frame(main_container, bg=self.card_bg, relief=tk.FLAT, bd=0)
+        control_card.pack(fill=tk.X, pady=(0, 20))
+        control_card.config(highlightbackground=self.accent_color, highlightthickness=1)
+        
+        # Kontrol paneli içeriği
+        control_inner = tk.Frame(control_card, bg=self.card_bg, padx=15, pady=15)
+        control_inner.pack(fill=tk.X, expand=True)
+        
+        # Responsive grid layout
+        control_inner.columnconfigure(0, weight=1)
+        control_inner.columnconfigure(1, weight=1)
+        
+        row = 0
+        
+        # İsim uzunluğu seçimi
+        length_label = tk.Label(control_inner, text="İsim Uzunluğu:", 
+                               font=('Helvetica', self.normal_font_size, 'bold'), 
+                               fg=self.text_color, bg=self.card_bg, anchor='w')
+        length_label.grid(row=row, column=0, sticky='w', pady=(0, 10))
+        
+        self.length_var = tk.StringVar(value="4-10 Karakter")
+        length_options = ["4 Karakter", "5 Karakter", "6 Karakter", "7 Karakter", 
+                         "8 Karakter", "9 Karakter", "10 Karakter", "4-10 Karakter"]
+        self.length_dropdown = ttk.Combobox(control_inner, textvariable=self.length_var, 
+                                          values=length_options, state="readonly", 
+                                          font=('Helvetica', self.normal_font_size), width=15)
+        self.length_dropdown.grid(row=row, column=1, sticky='ew', pady=(0, 10), padx=(10, 0))
+        row += 1
+        
+        # İsim türü seçimi
+        type_label = tk.Label(control_inner, text="İsim Türü:", 
+                             font=('Helvetica', self.normal_font_size, 'bold'), 
+                             fg=self.text_color, bg=self.card_bg, anchor='w')
+        type_label.grid(row=row, column=0, sticky='w', pady=(0, 10))
+        
+        self.type_var = tk.StringVar(value="Karma")
+        type_options = ["Karma", "Sadece Harf", "Sadece Sayı", "Özel Karakterli"]
+        self.type_dropdown = ttk.Combobox(control_inner, textvariable=self.type_var, 
+                                         values=type_options, state="readonly", 
+                                         font=('Helvetica', self.normal_font_size), width=15)
+        self.type_dropdown.grid(row=row, column=1, sticky='ew', pady=(0, 10), padx=(10, 0))
+        self.type_dropdown.bind('<<ComboboxSelected>>', self.on_type_change)
+        row += 1
+        
+        # Özel karakter seçimi (başlangıçta gizli)
+        self.char_frame = tk.Frame(control_inner, bg=self.card_bg)
+        self.char_label = tk.Label(self.char_frame, text="Özel Karakter:", 
+                                  font=('Helvetica', self.normal_font_size, 'bold'), 
+                                  fg=self.text_color, bg=self.card_bg, anchor='w')
+        self.char_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.char_var = tk.StringVar(value="_")
+        self.char_dropdown = ttk.Combobox(self.char_frame, textvariable=self.char_var, 
+                                         values=self.special_chars, state="readonly", 
+                                         font=('Helvetica', self.normal_font_size), width=5)
+        self.char_dropdown.pack(side=tk.LEFT)
+        row += 1
+        
+        # Kaç isim üretileceği seçimi
+        count_label = tk.Label(control_inner, text="Üretilecek İsim Sayısı:", 
+                              font=('Helvetica', self.normal_font_size, 'bold'), 
+                              fg=self.text_color, bg=self.card_bg, anchor='w')
+        count_label.grid(row=row, column=0, sticky='w', pady=(0, 15))
+        
+        self.count_var = tk.IntVar(value=12)
+        count_options = [6, 12, 18, 24]
+        count_dropdown = ttk.Combobox(control_inner, textvariable=self.count_var, 
+                                     values=count_options, state="readonly", 
+                                     font=('Helvetica', self.normal_font_size), width=5)
+        count_dropdown.grid(row=row, column=1, sticky='w', pady=(0, 15), padx=(10, 0))
+        row += 1
+        
+        # Butonlar
+        button_frame = tk.Frame(control_inner, bg=self.card_bg)
+        button_frame.grid(row=row, column=0, columnspan=2, sticky='ew', pady=(10, 0))
+        
+        generate_btn = tk.Button(button_frame, text="İsim Oluştur & Test Et", 
+                                font=('Helvetica', self.normal_font_size, 'bold'),
+                                bg=self.accent_color, fg=self.text_color, 
+                                relief=tk.FLAT, bd=0, height=1,
+                                command=self.generate_and_test_names, cursor="hand2")
+        generate_btn.pack(side=tk.LEFT, padx=(0, 10), fill=tk.X, expand=True)
+        generate_btn.config(activebackground=self.accent_color, activeforeground=self.text_color)
+        
+        clear_btn = tk.Button(button_frame, text="Temizle", 
+                             font=('Helvetica', self.normal_font_size),
+                             bg='#2A2A3E', fg=self.text_color, 
+                             relief=tk.FLAT, bd=0, height=1,
+                             command=self.clear_fields, cursor="hand2")
+        clear_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        clear_btn.config(activebackground='#3A3A4E', activeforeground=self.text_color)
+        row += 1
+        
+        # İlerleme çubuğu
+        self.progress = ttk.Progressbar(control_inner, mode='indeterminate')
+        self.progress.grid(row=row, column=0, columnspan=2, sticky='ew', pady=(15, 0))
+        row += 1
+        
+        # Sonuçlar bölümü - Kart tasarımı
+        results_card = tk.Frame(main_container, bg=self.card_bg, relief=tk.FLAT, bd=0)
+        results_card.pack(fill=tk.BOTH, expand=True)
+        results_card.config(highlightbackground=self.secondary_color, highlightthickness=1)
+        
+        # Sonuçlar başlık çerçevesi
+        results_header = tk.Frame(results_card, bg='#252538')
+        results_header.pack(fill=tk.X)
+        
+        name_header = tk.Label(results_header, text="Oluşturulan İsimler", 
+                              font=('Helvetica', self.normal_font_size, 'bold'), 
+                              fg=self.text_color, bg='#252538')
+        name_header.pack(side=tk.LEFT, padx=10, pady=8, expand=True, fill=tk.X)
+        
+        length_header = tk.Label(results_header, text="Uzunluk", 
+                               font=('Helvetica', self.normal_font_size, 'bold'), 
+                               fg=self.text_color, bg='#252538', width=8)
+        length_header.pack(side=tk.LEFT, padx=5, pady=8)
+        
+        status_header = tk.Label(results_header, text="Durum", 
+                               font=('Helvetica', self.normal_font_size, 'bold'), 
+                               fg=self.text_color, bg='#252538', width=8)
+        status_header.pack(side=tk.LEFT, padx=5, pady=8)
+        
+        # Ağaç görünümü için çerçeve
+        tree_frame = tk.Frame(results_card, bg=self.card_bg)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Sonuçlar için ağaç görünümü
+        style = ttk.Style()
+        style.configure("Treeview", 
+                        background=self.card_bg,
+                        foreground=self.text_color,
+                        fieldbackground=self.card_bg,
+                        borderwidth=0,
+                        font=('Helvetica', self.normal_font_size))
+        style.configure("Treeview.Heading", 
+                        background='#252538',
+                        foreground=self.text_color,
+                        font=('Helvetica', self.normal_font_size, 'bold'))
+        style.map('Treeview', background=[('selected', '#353548')])
+        
+        columns = ("isim", "uzunluk", "durum")
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=12)
+        
+        self.tree.heading("isim", text="İsim")
+        self.tree.heading("uzunluk", text="Uzunluk")
+        self.tree.heading("durum", text="Durum")
+        
+        self.tree.column("isim", width=200, anchor=tk.CENTER)
+        self.tree.column("uzunluk", width=80, anchor=tk.CENTER)
+        self.tree.column("durum", width=100, anchor=tk.CENTER)
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Durum çubuğu
+        self.status_var = tk.StringVar()
+        self.status_var.set("Hazır - 4-10 karakter aralığında isimler üretilir")
+        status_bar = tk.Label(self.root, textvariable=self.status_var, relief=tk.FLAT, 
+                             anchor=tk.W, bg='#252538', fg=self.subtext_color, padx=10, pady=5,
+                             font=('Helvetica', self.small_font_size))
+        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        # Bağlam menüsü
+        self.context_menu = tk.Menu(self.root, tearoff=0, bg=self.card_bg, fg=self.text_color,
+                                   font=('Helvetica', self.small_font_size))
+        self.context_menu.add_command(label="Panoya Kopyala", command=self.copy_selected)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Tümünü Seç", command=self.select_all)
+        self.tree.bind("<Button-3>", self.show_context_menu)
+        
+        # Kısayol tuşları
+        self.root.bind('<Control-c>', lambda e: self.copy_selected())
+        self.root.bind('<Control-a>', lambda e: self.select_all())
+        
+        # Mobil dokunmatik etkinlikleri
+        self.tree.bind("<Button-1>", self.on_tree_click)
+        
+    def on_tree_click(self, event):
+        # Mobil cihazlarda dokunmatik seçim
+        if self.screen_width <= 768:
+            item = self.tree.identify_row(event.y)
+            if item:
+                self.tree.selection_set(item)
+                self.show_context_menu(event)
+        
+    def on_type_change(self, event):
+        if self.type_var.get() == "Özel Karakterli":
+            self.char_frame.grid(row=2, column=0, columnspan=2, sticky='w', pady=(0, 10))
+        else:
+            self.char_frame.grid_forget()
+    
+    def get_length_range(self):
+        """Seçilen uzunluk değerine göre min ve max değerleri döndürür"""
+        selection = self.length_var.get()
+        
+        if selection == "4 Karakter":
+            return 4, 4
+        elif selection == "5 Karakter":
+            return 5, 5
+        elif selection == "6 Karakter":
+            return 6, 6
+        elif selection == "7 Karakter":
+            return 7, 7
+        elif selection == "8 Karakter":
+            return 8, 8
+        elif selection == "9 Karakter":
+            return 9, 9
+        elif selection == "10 Karakter":
+            return 10, 10
+        else:  # "4-10 Karakter"
+            return 4, 10
+    
+    def generate_short_name(self):
+        name_type = self.type_var.get()
+        min_length, max_length = self.get_length_range()
+        
+        # Rastgele uzunluk belirle (min-max arasında)
+        length = random.randint(min_length, max_length)
+        
+        if name_type == "Sadece Harf":
+            # Sadece harflerden oluşan kısa isim
+            letters = "abcdefghijklmnopqrstuvwxyz"
+            return ''.join(random.choice(letters) for _ in range(length))
+        
+        elif name_type == "Sadece Sayı":
+            # Sadece sayılardan oluşan kısa isim
+            numbers = "0123456789"
+            return ''.join(random.choice(numbers) for _ in range(length))
+        
+        elif name_type == "Özel Karakterli":
+            # Özel karakter içeren isim
+            char = self.char_var.get()
+            letters = "abcdefghijklmnopqrstuvwxyz"
+            numbers = "0123456789"
+            
+            if length < 3:
+                # Çok kısa isimler için
+                parts = [random.choice(letters) for _ in range(length-1)]
+                parts.append(char) if char else None
+                random.shuffle(parts)
+                return ''.join(parts)
+            else:
+                # Uzun isimler için
+                name_length = length - (1 if char else 0)
+                name = ''.join(random.choice(letters + numbers) for _ in range(name_length))
+                
+                if char:
+                    # Özel karakteri rastgele bir pozisyona ekle
+                    pos = random.randint(0, len(name))
+                    return name[:pos] + char + name[pos:]
+                return name
+        
+        else:  # Karma
+            # Harf ve sayı karışımı
+            chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+            return ''.join(random.choice(chars) for _ in range(length))
+    
+    def check_username_availability(self, username):
+        """TikTok kullanıcı adının müsait olup olmadığını kontrol et (simüle edilmiş)"""
+        # Kısa isimlerin daha nadir olduğunu varsayalım
+        if len(username) <= 5:
+            # 5 karakter ve altı isimler %5 ihtimalle müsait
+            simulated_availability = random.random() > 0.95
+        elif len(username) <= 7:
+            # 6-7 karakterli isimler %15 ihtimalle müsait
+            simulated_availability = random.random() > 0.85
+        else:
+            # 8-10 karakterli isimler %30 ihtimalle müsait
+            simulated_availability = random.random() > 0.70
+        
+        return simulated_availability
+    
+    def generate_and_test_names(self):
+        self.progress.start(10)
+        self.status_var.set("İsimler oluşturuluyor ve test ediliyor...")
+        
+        # Önceki sonuçları temizle
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        # Yeni isimler oluştur ve test et
+        def generate_thread():
+            available_count = 0
+            tried_count = 0
+            target_count = self.count_var.get()
+            
+            # Belirtilen sayıda isim üret
+            while tried_count < target_count:
+                username = self.generate_short_name()
+                is_available = self.check_username_availability(username)
+                
+                # UI güncellemesi ana thread'de yapılmalı
+                self.root.after(0, self.add_to_tree, username, is_available)
+                
+                if is_available:
+                    available_count += 1
+                
+                tried_count += 1
+            
+            # İlerleme çubuğunu durdur ve durumu güncelle
+            self.root.after(0, self.progress.stop)
+            self.root.after(0, lambda: self.status_var.set(
+                f"{tried_count} isim denendi, {available_count} müsait isim bulundu"))
+        
+        # İşlemleri ayrı bir thread'de yap
+        thread = threading.Thread(target=generate_thread)
+        thread.daemon = True
+        thread.start()
+    
+    def add_to_tree(self, username, is_available):
+        tags = ("available",) if is_available else ("unavailable",)
+        status = "Müsait ✅" if is_available else "Alınmış ❌"
+        
+        self.tree.insert("", tk.END, values=(username, len(username), status), tags=tags)
+        
+        # Renkleri ayarla
+        self.tree.tag_configure("available", foreground="#00FFAA")
+        self.tree.tag_configure("unavailable", foreground="#FF5555")
+    
+    def clear_fields(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.status_var.set("Liste temizlendi")
+    
+    def show_context_menu(self, event):
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            self.context_menu.post(event.x_root, event.y_root)
+    
+    def copy_selected(self):
+        selected = self.tree.selection()
+        if selected:
+            item = self.tree.item(selected[0])
+            username = item['values'][0]
+            self.root.clipboard_clear()
+            self.root.clipboard_append(username)
+            self.status_var.set(f"Panoya kopyalandı: {username}")
+            
+    def select_all(self):
+        for item in self.tree.get_children():
+            self.tree.selection_add(item)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PremiumTikTokNameGenerator(root)
+    root.mainloop()
